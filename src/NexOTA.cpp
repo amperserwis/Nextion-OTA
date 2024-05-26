@@ -277,6 +277,9 @@ bool NexOTA::upload(Stream *stream) {
         uint32_t size = this->fetchSectionFromStream(stream, section, buff);
 
         uint32_t new_section = this->uploadSection(section, buff, size);
+        if (new_section == 0) {
+            return false;
+        }
         if (new_section - section > 1) {
             this->skipToSectionForStream(stream, section, new_section);
         }
@@ -295,7 +298,11 @@ bool NexOTA::upload(SectionFetchFunction fetcher) {
 
         uint32_t size = fetcher(section, buff);
 
-        section = this->uploadSection(section, buff, size);
+        uint32_t new_section = this->uploadSection(section, buff, size);
+        if (new_section == 0) {
+            return false;
+        }
+        section = new_section;
     }
 
     return true;
