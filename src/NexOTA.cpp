@@ -226,7 +226,7 @@ uint32_t NexOTA::fetchSectionFromStream(Stream *stream, uint32_t section, char *
 }
 
 void NexOTA::skipToSectionForStream(Stream *stream, uint32_t section, uint32_t new_section) {
-    uint32_t total_size = new_section * NEX_OTA_SECTION_SIZE;
+    uint32_t total_size = (new_section - section) * NEX_OTA_SECTION_SIZE;
 
     for (uint32_t i = 0; i < total_size; i++) {
         while (!stream->available()) {
