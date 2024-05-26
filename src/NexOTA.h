@@ -150,7 +150,7 @@ private: /* methods */
     void skipToSectionForStream(Stream *stream, uint32_t section, uint32_t new_section);
 
 private: /* data */
-    uint16_t baudrate = 0;
+    uint32_t baudrate = 0;
     uint32_t file_size = 0;
     uint32_t file_section_total = 0;
 
