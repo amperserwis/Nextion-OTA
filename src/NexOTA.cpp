@@ -185,7 +185,7 @@ bool NexOTA::setPrepareForFirmwareUpdate() {
 
     // TODO: add a fallback for v1.1 protocol
     String filesize_str = String(this->file_size, 10);
-    String baudrate_str = String(this->baudrate, 10);
+    String baudrate_str = String(this->baudrate);
     cmd = "whmi-wris " + filesize_str + "," + baudrate_str + ",1";
 
     this->sendCommand(cmd.c_str());
