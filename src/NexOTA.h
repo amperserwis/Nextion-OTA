@@ -18,7 +18,7 @@ typedef std::function<uint32_t (uint32_t section, char *buff)> SectionFetchFunct
 class NexOTA
 {
 public: /* methods */
-    NexOTA();
+    NexOTA(uint32_t baudrate, uint32_t file_size);
 
     /**
      * prepare upload
