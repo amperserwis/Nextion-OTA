@@ -225,9 +225,9 @@ uint32_t NexOTA::fetchSectionFromStream(Stream *stream, uint32_t section, char *
 }
 
 void NexOTA::skipToSectionForStream(Stream *stream, uint32_t section, uint32_t new_section) {
-    uin32_t total_size = new_section * NEX_OTA_SECTION_SIZE;
+    uint32_t total_size = new_section * NEX_OTA_SECTION_SIZE;
 
-    for (uin32_t i = 0; i < total_size; i++) {
+    for (uint32_t i = 0; i < total_size; i++) {
         while (!stream->available()) {
             delay(1);
         }
@@ -237,7 +237,7 @@ void NexOTA::skipToSectionForStream(Stream *stream, uint32_t section, uint32_t n
 }
 
 
-uin32_t NexOTA::uploadSection(uin32_t section, char *buff, uint32_t size) {
+uint32_t NexOTA::uploadSection(uint32_t section, char *buff, uint32_t size) {
     yield();
 
     dbSerialPrintln("uploading section " + String(section) + " of " + String(this->file_section_total) + " with size " + String(size));

@@ -9,7 +9,7 @@
 #define NEX_OTA_SECTION_SIZE 4096
 
 typedef std::function<void(uint8_t)> ProgressUpdateFunction;
-typedef std::function<uin32_t (uint32_t section, char *buff)> SectionFetchFunction;
+typedef std::function<uint32_t (uint32_t section, char *buff)> SectionFetchFunction;
 
 /**
  *
@@ -75,7 +75,7 @@ private: /* methods */
      *
      * @return next section number.
      */
-    uin32_t uploadSection(uin32_t section, char *buff, uint32_t size);
+    uint32_t uploadSection(uint32_t section, char *buff, uint32_t size);
 
     /*
      * set download baudrate.
