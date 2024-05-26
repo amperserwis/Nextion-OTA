@@ -9,7 +9,7 @@
 #define NEX_OTA_SECTION_SIZE 4096
 
 typedef std::function<void(uint8_t)> ProgressUpdateFunction;
-typedef std::function<Stream *(uint32_t section, char *buff)> SectionFetchFunction;
+typedef std::function<uin32_t (uint32_t section, char *buff)> SectionFetchFunction;
 
 /**
  *
