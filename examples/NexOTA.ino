@@ -17,8 +17,8 @@ void setup() {
 
     File file = SD.open("nextion.tft", FILE_READ);
 
-    NexOTA ota;
-    if (!ota.configure(file.size())) {
+    NexOTA ota(9600, file.size());
+    if (!ota.begin()) {
         Serial.println("OTA configuration failed");
         while (1) {};
     }

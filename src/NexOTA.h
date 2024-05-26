@@ -21,11 +21,11 @@ public: /* methods */
     NexOTA();
 
     /**
-     * configure and prepare upload, set the file size
+     * prepare upload
      *
      * @return true if success, false for failure.
      */
-    bool configure(uint32_t baudrate, uint32_t file_size);
+    bool begin();
 
    /**
      * set Update Progress Callback. (What to do during update progress)

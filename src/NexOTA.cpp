@@ -4,7 +4,15 @@ const char NEXTION_FF_FF[3] = {0xFF, 0xFF, 0x00};
 
 String statusMessage = "";
 
-NexOTA::NexOTA() {}
+NexOTA::NexOTA(uint32_t baudrate, uint32_t file_size) {
+    this->baudrate = baudrate;
+
+    this->file_size = file_size;
+    this->file_section_total = file_size / NEX_OTA_SECTION_SIZE;
+    if (file_size % NEX_OTA_SECTION_SIZE) {
+        this->file_section_total++;
+    }
+}
 
 bool NexOTA::connect() {
     yield();
@@ -34,15 +42,8 @@ bool NexOTA::connect() {
     return true;
 }
 
-bool NexOTA::configure(uint32_t baudrate, uint32_t file_size) {
+bool NexOTA::begin() {
     yield();
-
-    this->baudrate = baudrate;
-    this->file_size = file_size;
-    this->file_section_total = file_size / NEX_OTA_SECTION_SIZE;
-    if (file_size % NEX_OTA_SECTION_SIZE) {
-        this->file_section_total++;
-    }
 
     if (!this->connect()) {
         return false;
