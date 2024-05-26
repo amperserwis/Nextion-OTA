@@ -34,9 +34,10 @@ bool NexOTA::connect() {
     return true;
 }
 
-bool NexOTA::configure(uint32_t file_size) {
+bool NexOTA::configure(uint32_t baudrate, uint32_t file_size) {
     yield();
 
+    this->baudrate = baudrate;
     this->file_size = file_size;
     this->file_section_total = file_size / NEX_OTA_SECTION_SIZE;
     if (file_size % NEX_OTA_SECTION_SIZE) {
@@ -181,8 +182,9 @@ bool NexOTA::setPrepareForFirmwareUpdate() {
 
     this->recvRetString(response, true);
 
+    // TODO: add a fallback for v1.1 protocol
     String filesize_str = String(this->file_size, 10);
-    String baudrate_str = String(NEX_BAUDRATE);
+    String baudrate_str = String(this->baudrate, 10);
     cmd = "whmi-wris " + filesize_str + "," + baudrate_str + ",1";
 
     this->sendCommand(cmd.c_str());
@@ -198,7 +200,11 @@ bool NexOTA::setPrepareForFirmwareUpdate() {
     return response.indexOf(0x05) != -1;
 }
 
-uint32_t NexOTA::fetchSection(Stream *stream, uint32_t section, char *buff) {
+void NexOTA::setUpdateProgressCallback(ProgressUpdateFunction value) {
+    this->update_progress_callback = value;
+}
+
+uint32_t NexOTA::fetchSectionFromStream(Stream *stream, uint32_t section, char *buff) {
     uint32_t size_left = min(this->file_size - section * NEX_OTA_SECTION_SIZE, NEX_OTA_SECTION_SIZE);
 
     uint32_t buff_size = 0;
@@ -218,7 +224,7 @@ uint32_t NexOTA::fetchSection(Stream *stream, uint32_t section, char *buff) {
     return size_left;
 }
 
-void NexOTA::skipToSection(Stream *stream, uint32_t section, uint32_t new_section) {
+void NexOTA::skipToSectionForStream(Stream *stream, uint32_t section, uint32_t new_section) {
     uin32_t total_size = new_section * NEX_OTA_SECTION_SIZE;
 
     for (uin32_t i = 0; i < total_size; i++) {
@@ -230,6 +236,36 @@ void NexOTA::skipToSection(Stream *stream, uint32_t section, uint32_t new_sectio
     }
 }
 
+
+uin32_t NexOTA::uploadSection(uin32_t section, char *buff, uint32_t size) {
+    yield();
+
+    dbSerialPrintln("uploading section " + String(section) + " of " + String(this->file_section_total) + " with size " + String(size));
+    nexSerial.write(buff, size);
+
+    uint32_t skip_amount = 0;
+
+    byte recv_buf[5] = { 0 };
+    if (!this->recvRetForUpdate(recv_buf)) {
+        return 0;
+    }
+
+    if (recv_buf[0] == 0x08) {
+        skip_amount += recv_buf[1];
+        skip_amount += recv_buf[2] << 8;
+        skip_amount += recv_buf[3] << 16;
+        skip_amount += recv_buf[4] << 24;
+    }
+
+    uint32_t new_section = skip_amount == 0 ? section + 1 : skip_amount / NEX_OTA_SECTION_SIZE;
+
+    if (this->update_progress_callback) {
+        this->update_progress_callback(section);
+    }
+
+    return new_section;
+}
+
 bool NexOTA::upload(Stream *stream) {
     yield();
 
@@ -237,41 +273,32 @@ bool NexOTA::upload(Stream *stream) {
     while (section < this->file_section_total) {
         char buff[NEX_OTA_SECTION_SIZE] = { 0 };
 
-        uint32_t size = this->fetchSection(stream, section, buff);
+        uint32_t size = this->fetchSectionFromStream(stream, section, buff);
 
-        dbSerialPrintln("uploading section " + String(section) + " of " + String(this->file_section_total) + " with size " + String(size));
-        nexSerial.write(buff, size);
-
-        uint32_t skip_amount = 0;
-
-        byte recv_buf[5] = { 0 };
-        if (!this->recvRetForUpdate(recv_buf)) {
-            return false;
+        uint32_t new_section = this->uploadSection(section, buff, size);
+        if (new_section - section > 1) {
+            this->skipToSectionForStream(stream, section, new_section);
         }
-
-        if (recv_buf[0] == 0x08) {
-            skip_amount += recv_buf[1];
-            skip_amount += recv_buf[2] << 8;
-            skip_amount += recv_buf[3] << 16;
-            skip_amount += recv_buf[4] << 24;
-        }
-
-        if (skip_amount) {
-            if (section == 0) {
-                use_stream = false;
-            }
-
-            uint32_t new_section = skip_amount / NEX_OTA_SECTION_SIZE;
-            this->skipToSection(stream, section, new_section);
-            section = new_section;
-        } else {
-            section++;
-        }
+        section = new_section;
     }
 
     return true;
 }
 
+bool NexOTA::upload(SectionFetchFunction fetcher) {
+    yield();
+
+    uint32_t section = 0;
+    while (section < this->file_section_total) {
+        char buff[NEX_OTA_SECTION_SIZE] = { 0 };
+
+        uint32_t size = fetcher(section, buff);
+
+        section = this->uploadSection(section, buff, size);
+    }
+
+    return true;
+}
 
 
 void NexOTA::softReset(void) {

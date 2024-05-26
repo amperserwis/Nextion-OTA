@@ -1,11 +1,15 @@
 #ifndef __NEX_OTA_H__
 #define __NEX_OTA_H__
 
+#include <functional>
 #include <Arduino.h>
 #include <Nextion.h>
 
 #define NEX_OTA_TIMEOUT 2000
 #define NEX_OTA_SECTION_SIZE 4096
+
+typedef std::function<void(uint8_t)> ProgressUpdateFunction;
+typedef std::function<Stream *(uint32_t section, char *buff)> SectionFetchFunction;
 
 /**
  *
@@ -21,7 +25,14 @@ public: /* methods */
      *
      * @return true if success, false for failure.
      */
-    bool configure(uint32_t file_size);
+    bool configure(uint32_t baudrate, uint32_t file_size);
+
+   /**
+     * set Update Progress Callback. (What to do during update progress)
+     *
+     * @return none
+     */
+	void setUpdateProgressCallback(ProgressUpdateFunction value);
 
     /**
      * start update tft file to nextion.
@@ -29,6 +40,13 @@ public: /* methods */
      * @return true if success, false for failure.
      */
     bool upload(Stream *stream);
+
+    /**
+     * start update tft file to nextion.
+     *
+     * @return true if success, false for failure.
+     */
+    bool upload(SectionFetchFunction fetcher);
 
     /**
      * Send reset command to Nextion over serial
@@ -51,6 +69,13 @@ private: /* methods */
      * @return true if success, false for failure.
      */
     bool connect();
+
+    /**
+     * start update tft file section to nextion.
+     *
+     * @return next section number.
+     */
+    uin32_t uploadSection(uin32_t section, char *buff, uint32_t size);
 
     /*
      * set download baudrate.
@@ -120,15 +145,16 @@ private: /* methods */
 
     uint32_t recvRetForUpdate(byte *response);
 
-    uint32_t fetchSection(Stream *stream, uint32_t section, char *buff);
+    uint32_t fetchSectionFromStream(Stream *stream, uint32_t section, char *buff);
 
-    void skipToSection(Stream *stream, uint32_t section, uin32_t new_section);
+    void skipToSectionForStream(Stream *stream, uint32_t section, uint32_t new_section);
 
 private: /* data */
+    uint16_t baudrate = 0;
     uint32_t file_size = 0;
     uint32_t file_section_total = 0;
 
-    THandlerFunction update_progress_callback;
+    ProgressUpdateFunction update_progress_callback;
 };
 
 #endif
